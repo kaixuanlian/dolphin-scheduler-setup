@@ -12,11 +12,14 @@ import org.apache.dolphinscheduler.remote.config.Address;
 import org.apache.dolphinscheduler.remote.config.NettyClientConfig;
 import org.apache.dolphinscheduler.remote.exceptions.RemotingException;
 import org.apache.dolphinscheduler.remote.handler.NettyClientHandler;
+import org.apache.dolphinscheduler.remote.utils.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -33,6 +36,8 @@ public class NettyRemotingClient {
 
     private final ConcurrentHashMap<Address, Channel> channels = new ConcurrentHashMap();
 
+    private final ExecutorService defaultExecutor = Executors.newFixedThreadPool(Constants.CPUS);
+
     private final NioEventLoopGroup workGroup = new NioEventLoopGroup(1, new ThreadFactory() {
         private AtomicInteger threadIndex = new AtomicInteger(0);
 
@@ -45,22 +50,22 @@ public class NettyRemotingClient {
 
     public NettyRemotingClient(final NettyClientConfig clientConfig){
         this.clientConfig = clientConfig;
-
     }
 
     public void start(){
+        final NettyClientHandler handler = new NettyClientHandler(this);
         this.bootstrap
                 .group(this.workGroup)
                 .channel(NioSocketChannel.class)
-                .option(ChannelOption.SO_KEEPALIVE, true)
-                .option(ChannelOption.TCP_NODELAY, true)
+                .option(ChannelOption.SO_KEEPALIVE, clientConfig.isSoKeepalive())
+                .option(ChannelOption.TCP_NODELAY, clientConfig.isTcpNodelay())
                 .option(ChannelOption.SO_SNDBUF, clientConfig.getSendBufferSize())
                 .option(ChannelOption.SO_RCVBUF, clientConfig.getReceiveBufferSize())
                 .handler(new ChannelInitializer<SocketChannel>() {
                     public void initChannel(SocketChannel ch) throws Exception {
                         ch.pipeline().addLast(
                                 new NettyDecoder(),
-                                new NettyClientHandler(),
+                                handler,
                                 encoder);
                     }
                 });
@@ -85,8 +90,9 @@ public class NettyRemotingClient {
             String msg = String.format("send command %s to address %s encounter error", command, address);
             throw new RemotingException(msg, ex);
         }
-
     }
+
+
 
     public Channel getChannel(Address address) {
         Channel channel = channels.get(address);
@@ -107,10 +113,7 @@ public class NettyRemotingClient {
             }
             if (future.isSuccess()) {
                 Channel channel = future.channel();
-                Channel oldChannel = channels.putIfAbsent(address, channel);
-                if(oldChannel != null){
-                    oldChannel.close();
-                }
+                channels.put(address, channel);
                 return channel;
             }
         } catch (Exception ex) {
@@ -119,11 +122,18 @@ public class NettyRemotingClient {
         return null;
     }
 
+    public ExecutorService getDefaultExecutor() {
+        return defaultExecutor;
+    }
+
     public void close() {
         try {
             closeChannels();
             if(workGroup != null){
                 this.workGroup.shutdownGracefully();
+            }
+            if(defaultExecutor != null){
+                defaultExecutor.shutdown();
             }
         } catch (Exception ex) {
             logger.error("netty client close exception", ex);
@@ -138,4 +148,10 @@ public class NettyRemotingClient {
         this.channels.clear();
     }
 
+    public void removeChannel(Address address){
+        Channel channel = this.channels.remove(address);
+        if(channel != null){
+            channel.close();
+        }
+    }
 }

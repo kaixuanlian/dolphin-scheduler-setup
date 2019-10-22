@@ -9,11 +9,11 @@ import java.io.Serializable;
  *  * *************************************************************************
  *                                   Protocol
  *  ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
- *       1   │    1    │    1    │     8     │       4       |                |
+ *       1   │    1    │    1    │     8         |       4       |                |
  *  ├ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
- *           │         │         │           │               |                |
- *  │  magic   version     cmd       opaque      body size   |  body value    |
- *           │         │         │           │               |                |
+ *           │         │         │               │               |                |
+ *  │  magic    cmd       opaque     bodyLength      |   body value    |
+ *           │         │         │               │               |                |
  *  └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─
  * @Author: Tboy
  */
@@ -23,10 +23,6 @@ public class Command implements Serializable {
 
     public static final byte MAGIC = (byte) 0xbabe;
 
-    public static final byte VERSION = (byte)0x00;
-
-    public static final int LENGTH = 1 + 1 + 1 + 8 + 4;
-
     public Command(){
     }
 
@@ -34,28 +30,18 @@ public class Command implements Serializable {
         this.opaque = opaque;
     }
 
-    private byte version;
-
-    private byte cmd;
+    private CommandType type;
 
     private long opaque;
 
     private ByteBuf body;
 
-    public byte getVersion() {
-        return version;
+    public CommandType getType() {
+        return type;
     }
 
-    public void setVersion(byte version) {
-        this.version = version;
-    }
-
-    public byte getCmd() {
-        return cmd;
-    }
-
-    public void setCmd(byte cmd) {
-        this.cmd = cmd;
+    public void setType(CommandType type) {
+        this.type = type;
     }
 
     public long getOpaque() {
@@ -65,7 +51,6 @@ public class Command implements Serializable {
     public void setOpaque(long opaque) {
         this.opaque = opaque;
     }
-
 
     public ByteBuf getBody() {
         return body;
@@ -105,7 +90,7 @@ public class Command implements Serializable {
 
     @Override
     public String toString() {
-        return "Command [cmd=" + cmd + ", opaque=" + opaque + ", bodyLen=" + (body == null ? 0 : body.readableBytes()) + ", version=" + version + "]";
+        return "Command [type=" + type + ", opaque=" + opaque + ", bodyLen=" + (body == null ? 0 : body.readableBytes()) + "]";
     }
 
 }

@@ -7,6 +7,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ReplayingDecoder;
 import org.apache.dolphinscheduler.remote.command.Command;
 import org.apache.dolphinscheduler.remote.command.CommandHeader;
+import org.apache.dolphinscheduler.remote.command.CommandType;
 
 import java.util.List;
 
@@ -26,12 +27,9 @@ public class NettyDecoder extends ReplayingDecoder<NettyDecoder.State> {
         switch (state()){
             case MAGIC:
                 checkMagic(in.readByte());
-                checkpoint(State.VERSION);
-            case VERSION:
-                checkVersion(in.readByte());
                 checkpoint(State.COMMAND);
             case COMMAND:
-                commandHeader.setCmd(in.readByte());
+                commandHeader.setType(in.readByte());
                 checkpoint(State.OPAQUE);
             case OPAQUE:
                 commandHeader.setOpaque(in.readLong());
@@ -44,7 +42,7 @@ public class NettyDecoder extends ReplayingDecoder<NettyDecoder.State> {
                 in.readBytes(body);
                 //
                 Command packet = new Command();
-                packet.setCmd(commandHeader.getCmd());
+                packet.setType(commandType(commandHeader.getType()));
                 packet.setOpaque(commandHeader.getOpaque());
                 packet.setBody(Unpooled.wrappedBuffer(body));
                 out.add(packet);
@@ -53,21 +51,23 @@ public class NettyDecoder extends ReplayingDecoder<NettyDecoder.State> {
         }
     }
 
+    private CommandType commandType(byte type){
+        for(CommandType ct : CommandType.values()){
+            if(ct.ordinal() == type){
+                return ct;
+            }
+        }
+        return null;
+    }
+
     private void checkMagic(byte magic) {
         if (magic != Command.MAGIC) {
             throw new IllegalArgumentException("illegal packet [magic]" + magic);
         }
     }
 
-    private void checkVersion(byte version) {
-        if (version != Command.VERSION) {
-            throw new IllegalArgumentException("illegal packet [version]" + version);
-        }
-    }
-
     enum State{
         MAGIC,
-        VERSION,
         COMMAND,
         OPAQUE,
         BODY_LENGTH,

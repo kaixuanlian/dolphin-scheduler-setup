@@ -2,6 +2,7 @@ package org.apache.dolphinscheduler.remote.handler;
 
 import io.netty.channel.*;
 import org.apache.dolphinscheduler.remote.NettyRemotingClient;
+import org.apache.dolphinscheduler.remote.NettyRemotingServer;
 import org.apache.dolphinscheduler.remote.command.Command;
 import org.apache.dolphinscheduler.remote.command.CommandType;
 import org.apache.dolphinscheduler.remote.processor.NettyRequestProcessor;
@@ -18,21 +19,20 @@ import java.util.concurrent.RejectedExecutionException;
  * @Author: Tboy
  */
 @ChannelHandler.Sharable
-public class NettyClientHandler extends ChannelInboundHandlerAdapter {
+public class NettyServerHandler extends ChannelInboundHandlerAdapter {
 
-    private final Logger logger = LoggerFactory.getLogger(NettyClientHandler.class);
+    private final Logger logger = LoggerFactory.getLogger(NettyServerHandler.class);
 
-    private final NettyRemotingClient nettyRemotingClient;
+    private final NettyRemotingServer nettyRemotingServer;
 
     private final ConcurrentHashMap<CommandType, Pair<NettyRequestProcessor, ExecutorService>> processors = new ConcurrentHashMap();
 
-    public NettyClientHandler(NettyRemotingClient nettyRemotingClient){
-        this.nettyRemotingClient = nettyRemotingClient;
+    public NettyServerHandler(NettyRemotingServer nettyRemotingServer){
+        this.nettyRemotingServer = nettyRemotingServer;
     }
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        nettyRemotingClient.removeChannel(ChannelUtils.toAddress(ctx.channel()));
         ctx.channel().close();
     }
 
@@ -44,7 +44,7 @@ public class NettyClientHandler extends ChannelInboundHandlerAdapter {
     public void registerProcessor(final CommandType commandType, final NettyRequestProcessor processor, final ExecutorService executor) {
         ExecutorService executorRef = executor;
         if(executorRef == null){
-            executorRef = nettyRemotingClient.getDefaultExecutor();
+            executorRef = nettyRemotingServer.getDefaultExecutor();
         }
         this.processors.putIfAbsent(commandType, new Pair<NettyRequestProcessor, ExecutorService>(processor, executorRef));
     }
@@ -75,7 +75,6 @@ public class NettyClientHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         logger.error("exceptionCaught", cause);
-        nettyRemotingClient.removeChannel(ChannelUtils.toAddress(ctx.channel()));
         ctx.channel().close();
     }
 

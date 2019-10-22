@@ -7,7 +7,7 @@ import java.io.Serializable;
  */
 public class CommandHeader implements Serializable {
 
-    private byte cmd;
+    private byte type;
 
     private long opaque;
 
@@ -21,12 +21,12 @@ public class CommandHeader implements Serializable {
         this.bodyLength = bodyLength;
     }
 
-    public byte getCmd() {
-        return cmd;
+    public byte getType() {
+        return type;
     }
 
-    public void setCmd(byte cmd) {
-        this.cmd = cmd;
+    public void setType(byte type) {
+        this.type = type;
     }
 
     public long getOpaque() {

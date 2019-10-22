@@ -1,6 +1,7 @@
 package org.apache.dolphinscheduler.remote.utils;
 
 import io.netty.channel.Channel;
+import org.apache.dolphinscheduler.remote.config.Address;
 
 import java.net.InetSocketAddress;
 
@@ -15,6 +16,11 @@ public class ChannelUtils {
 
     public static String getRemoteAddress(Channel channel){
         return ((InetSocketAddress)channel.remoteAddress()).getAddress().getHostAddress();
+    }
+
+    public static Address toAddress(Channel channel){
+        InetSocketAddress socketAddress = ((InetSocketAddress)channel.remoteAddress());
+        return new Address(socketAddress.getAddress().getHostAddress(), socketAddress.getPort());
     }
 
 }

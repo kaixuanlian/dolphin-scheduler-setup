@@ -1,9 +1,13 @@
 package org.apache.dolphinscheduler.remote.config;
 
+import org.apache.dolphinscheduler.remote.utils.Constants;
+
 /**
  * @Author: Tboy
  */
-public class NettyClientConfig {
+public class NettyServerConfig {
+
+    private int soBacklog = 1024;
 
     private boolean tcpNodelay = true;
 
@@ -13,7 +17,26 @@ public class NettyClientConfig {
 
     private int receiveBufferSize = 65535;
 
-    private int port = 12356;
+    private int workerThread = Constants.CPUS >> 1;
+
+    private int port = 12357;
+
+
+    public int getPort() {
+        return port;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public int getSoBacklog() {
+        return soBacklog;
+    }
+
+    public void setSoBacklog(int soBacklog) {
+        this.soBacklog = soBacklog;
+    }
 
     public boolean isTcpNodelay() {
         return tcpNodelay;
@@ -47,11 +70,11 @@ public class NettyClientConfig {
         this.receiveBufferSize = receiveBufferSize;
     }
 
-    public int getPort() {
-        return port;
+    public int getWorkerThread() {
+        return workerThread;
     }
 
-    public void setPort(int port) {
-        this.port = port;
+    public void setWorkerThread(int workerThread) {
+        this.workerThread = workerThread;
     }
 }

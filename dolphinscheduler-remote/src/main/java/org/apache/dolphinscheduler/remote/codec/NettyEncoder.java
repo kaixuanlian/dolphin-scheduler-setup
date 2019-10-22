@@ -17,8 +17,7 @@ public class NettyEncoder extends MessageToByteEncoder<Command> {
             throw new Exception("encode msg is null");
         }
         out.writeByte(Command.MAGIC);
-        out.writeByte(Command.VERSION);
-        out.writeByte(msg.getCmd());
+        out.writeByte(msg.getType().ordinal());
         out.writeLong(msg.getOpaque());
         out.writeInt(msg.getBody().readableBytes());
         out.writeBytes(msg.getBody());
