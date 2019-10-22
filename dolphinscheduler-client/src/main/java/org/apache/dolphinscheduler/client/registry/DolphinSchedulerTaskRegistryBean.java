@@ -13,11 +13,21 @@ public class DolphinSchedulerTaskRegistryBean {
 
     private String taskName;
 
+    private int connectorPort;
+
     private String description;
 
     private String className;
 
     private String methodName;
+
+    public int getConnectorPort() {
+        return connectorPort;
+    }
+
+    public void setConnectorPort(int connectorPort) {
+        this.connectorPort = connectorPort;
+    }
 
     public String getApplicationName() {
         return applicationName;

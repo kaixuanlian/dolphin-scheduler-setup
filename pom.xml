@@ -4,6 +4,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>2.1.7.RELEASE</version>
+        <relativePath/>
+    </parent>
+
+
     <groupId>org.apache.dolphinscheduler</groupId>
     <artifactId>dolphinscheduler</artifactId>
     <packaging>pom</packaging>
@@ -11,6 +19,8 @@
     <modules>
         <module>dolphinscheduler-client</module>
         <module>dolphinscheduler-remote</module>
+        <module>dolphinscheduler-manager</module>
+        <module>dolphinscheduler-boot</module>
     </modules>
 
     <properties>
@@ -21,7 +31,6 @@
         <slf4j.version>1.7.12</slf4j.version>
         <log4j.version>1.2.17</log4j.version>
         <netty.version>4.1.42.Final</netty.version>
-        <guava.version>23.0</guava.version>
     </properties>
 
     <dependencies>
@@ -75,11 +84,6 @@
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
             <version>${netty.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
         </dependency>
         <dependency>
             <groupId>org.reflections</groupId>

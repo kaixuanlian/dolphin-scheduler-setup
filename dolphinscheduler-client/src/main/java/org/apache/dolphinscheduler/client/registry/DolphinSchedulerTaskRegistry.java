@@ -2,6 +2,7 @@ package org.apache.dolphinscheduler.client.registry;
 
 import org.apache.dolphinscheduler.client.annotation.DolphinSchedulerTask;
 import org.apache.dolphinscheduler.client.exceptions.TaskRegistryException;
+import org.apache.dolphinscheduler.remote.config.NettyClientConfig;
 import org.apache.dolphinscheduler.remote.utils.IPUtils;
 import org.apache.zookeeper.KeeperException;
 import org.reflections.Reflections;
@@ -36,6 +37,9 @@ public class DolphinSchedulerTaskRegistry implements ApplicationListener<Applica
 
     @Autowired
     private ZookeeperRegistryCenter zookeeperRegistryCenter;
+
+    @Autowired
+    private NettyClientConfig nettyClientConfig;
 
     private final AtomicBoolean REGISTER = new AtomicBoolean(false);
 
@@ -87,6 +91,7 @@ public class DolphinSchedulerTaskRegistry implements ApplicationListener<Applica
         registerBean.setApplicationName(registerConfig.getApplicationName());
         registerBean.setGroupName(registerConfig.getGroupName());
         registerBean.setTaskName(taskName);
+        registerBean.setConnectorPort(nettyClientConfig.getConnectorPort());
         registerBean.setDescription(description);
         registerBean.setClassName(className);
         registerBean.setMethodName(methodName);

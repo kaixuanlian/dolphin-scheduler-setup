@@ -1,33 +1,42 @@
 package org.apache.dolphinscheduler.remote.config;
 
 import org.apache.dolphinscheduler.remote.utils.Constants;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 /**
  * @Author: Tboy
  */
+@Component
 public class NettyServerConfig {
 
-    private int soBacklog = 1024;
+    @Value("${netty.sobacklog:1024}")
+    private int soBacklog;
 
-    private boolean tcpNodelay = true;
+    @Value("${netty.tcpNodelay:true}")
+    private boolean tcpNodelay;
 
-    private boolean soKeepalive = true;
+    @Value("${netty.soKeepalive:true}")
+    private boolean soKeepalive;
 
-    private int sendBufferSize = 65535;
+    @Value("${netty.sendBufferSize:65535}")
+    private int sendBufferSize;
 
-    private int receiveBufferSize = 65535;
+    @Value("${netty.receiveBufferSize:65535}")
+    private int receiveBufferSize;
 
-    private int workerThread = Constants.CPUS >> 1;
+    @Value("${netty.workerThread:16}")
+    private int workerThread;
 
-    private int port = 12357;
+    @Value("${netty.listenPort:12357}")
+    private int listenPort;
 
-
-    public int getPort() {
-        return port;
+    public int getListenPort() {
+        return listenPort;
     }
 
-    public void setPort(int port) {
-        this.port = port;
+    public void setListenPort(int listenPort) {
+        this.listenPort = listenPort;
     }
 
     public int getSoBacklog() {

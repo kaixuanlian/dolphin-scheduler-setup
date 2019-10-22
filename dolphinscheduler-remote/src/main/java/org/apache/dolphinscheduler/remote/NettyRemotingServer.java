@@ -77,17 +77,17 @@ public class NettyRemotingServer {
 
         ChannelFuture future = null;
         try {
-            future = serverBootstrap.bind(serverConfig.getPort()).sync();
+            future = serverBootstrap.bind(serverConfig.getListenPort()).sync();
         } catch (Exception e) {
             logger.error("NettyRemotingServer bind fail {}, exit", e);
-            throw new RuntimeException(String.format("NettyRemotingServer bind %s fail", serverConfig.getPort()));
+            throw new RuntimeException(String.format("NettyRemotingServer bind %s fail", serverConfig.getListenPort()));
         }
         if (future.isSuccess()) {
-            logger.info("NettyRemotingServer bind success at port : {}", serverConfig.getPort());
+            logger.info("NettyRemotingServer bind success at port : {}", serverConfig.getListenPort());
         } else if (future.cause() != null) {
             logger.error("NettyRemotingServer bind fail {}", future.cause());
         } else {
-            throw new RuntimeException(String.format("NettyRemotingServer bind %s fail", serverConfig.getPort()));
+            throw new RuntimeException(String.format("NettyRemotingServer bind %s fail", serverConfig.getListenPort()));
         }
     }
 

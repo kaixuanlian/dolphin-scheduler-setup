@@ -1,19 +1,28 @@
 package org.apache.dolphinscheduler.remote.config;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
 /**
  * @Author: Tboy
  */
+@Component
 public class NettyClientConfig {
 
-    private boolean tcpNodelay = true;
+    @Value("${netty.tcpNodelay:true}")
+    private boolean tcpNodelay;
 
-    private boolean soKeepalive = true;
+    @Value("${netty.soKeepalive:true}")
+    private boolean soKeepalive;
 
-    private int sendBufferSize = 65535;
+    @Value("${netty.sendBufferSize:65535}")
+    private int sendBufferSize;
 
-    private int receiveBufferSize = 65535;
+    @Value("${netty.receiveBufferSize:65535}")
+    private int receiveBufferSize;
 
-    private int port = 12356;
+    @Value("${netty.connectorPort:12356}")
+    private int connectorPort;
 
     public boolean isTcpNodelay() {
         return tcpNodelay;
@@ -47,11 +56,11 @@ public class NettyClientConfig {
         this.receiveBufferSize = receiveBufferSize;
     }
 
-    public int getPort() {
-        return port;
+    public int getConnectorPort() {
+        return connectorPort;
     }
 
-    public void setPort(int port) {
-        this.port = port;
+    public void setConnectorPort(int connectorPort) {
+        this.connectorPort = connectorPort;
     }
 }

@@ -12,7 +12,7 @@ public class DolphinSchedulerTaskRegistryConfig {
     @Value("${spring.application.name}")
     private String applicationName;
 
-    @Value("${spring.group.name:'defaultGroup'}")
+    @Value("${spring.group.name:defaultGroup}")
     private String groupName;
 
     public String getApplicationName() {
