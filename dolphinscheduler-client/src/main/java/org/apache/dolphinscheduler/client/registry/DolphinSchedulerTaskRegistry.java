@@ -126,7 +126,7 @@ public class DolphinSchedulerTaskRegistry implements ApplicationListener<Applica
         StringBuilder builder = new StringBuilder(100);
         builder.append(registerBean.getApplicationName()).append("-");
         builder.append(registerBean.getGroupName()).append("-");
-        builder.append(registerBean.getTaskName()).append("-");
+        builder.append(registerBean.getTaskName());
         return builder.toString();
     }
 }
