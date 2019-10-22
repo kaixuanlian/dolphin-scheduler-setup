@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.nio.charset.Charset;
 import java.util.HashSet;
@@ -26,6 +27,7 @@ import java.util.Set;
 /**
  * @Author: Tboy
  */
+@Component
 public class ZookeeperRegistryCenter implements InitializingBean {
 
     private final Logger logger = LoggerFactory.getLogger(ZookeeperRegistryCenter.class);
@@ -92,8 +94,8 @@ public class ZookeeperRegistryCenter implements InitializingBean {
     }
 
     private void initNodes() {
-        zookeeperOperator.persist(APP_PATH, EMPTY);
         zookeeperOperator.persist(TASK_PATH, EMPTY);
+        zookeeperOperator.persist(APP_PATH, EMPTY);
     }
 
     public void close() {

@@ -45,12 +45,13 @@ public class DolphinSchedulerTaskRegistry implements ApplicationListener<Applica
     public void onApplicationEvent(ApplicationEvent applicationEvent) {
         if (applicationEvent instanceof ContextRefreshedEvent && REGISTER.compareAndSet(false, true)) {
             try {
-
+                Set<Method> annotationTask = this.findAnnotationTask();
+                this.registerAnnotationTask(annotationTask);
             } catch (Throwable ex){
                 logger.error("DolphinSchedulerTaskRegister error", ex);
             }
         } else{
-            logger.error("DolphinSchedulerTaskRegister has registered");
+            logger.info("DolphinSchedulerTaskRegister has registered");
         }
     }
 
@@ -87,7 +88,6 @@ public class DolphinSchedulerTaskRegistry implements ApplicationListener<Applica
         registerBean.setGroupName(registerConfig.getGroupName());
         registerBean.setTaskName(taskName);
         registerBean.setDescription(description);
-        registerBean.setHostName(IPUtils.getFirstNoLoopbackIP4Address());
         registerBean.setClassName(className);
         registerBean.setMethodName(methodName);
         return registerBean;
@@ -127,7 +127,6 @@ public class DolphinSchedulerTaskRegistry implements ApplicationListener<Applica
         builder.append(registerBean.getApplicationName()).append("-");
         builder.append(registerBean.getGroupName()).append("-");
         builder.append(registerBean.getTaskName()).append("-");
-        builder.append(registerBean.getHostName());
         return builder.toString();
     }
 }

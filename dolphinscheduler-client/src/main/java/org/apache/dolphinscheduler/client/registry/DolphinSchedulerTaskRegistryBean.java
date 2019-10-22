@@ -15,8 +15,6 @@ public class DolphinSchedulerTaskRegistryBean {
 
     private String description;
 
-    private String hostName;
-
     private String className;
 
     private String methodName;
@@ -43,14 +41,6 @@ public class DolphinSchedulerTaskRegistryBean {
 
     public void setTaskName(String taskName) {
         this.taskName = taskName;
-    }
-
-    public String getHostName() {
-        return hostName;
-    }
-
-    public void setHostName(String hostName) {
-        this.hostName = hostName;
     }
 
     public String getClassName() {
