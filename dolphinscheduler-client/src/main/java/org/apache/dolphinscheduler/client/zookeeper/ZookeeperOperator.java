@@ -1,10 +1,20 @@
 package org.apache.dolphinscheduler.client.zookeeper;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.ACLProvider;
+import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.apache.curator.utils.CloseableUtils;
+import org.apache.dolphinscheduler.remote.utils.StringUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.data.ACL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -13,15 +23,54 @@ import java.util.List;
 /**
  * @Author: Tboy
  */
-public class ZookeeperOperator {
+@Component
+public class ZookeeperOperator implements InitializingBean {
 
     private final Logger logger = LoggerFactory.getLogger(ZookeeperOperator.class);
 
-    protected final CuratorFramework client;
+    @Autowired
+    private ZookeeperConfig zookeeperConfig;
 
-    public ZookeeperOperator(CuratorFramework client){
-        this.client = client;
+    protected CuratorFramework client;
+
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        this.client = buildClient();
     }
+
+    private CuratorFramework buildClient() {
+        logger.info("zookeeper registry center init, server lists is: {}.", zookeeperConfig.getServerLists());
+        CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder().ensembleProvider(new DefaultEnsembleProvider(zookeeperConfig.getServerLists())).retryPolicy(new ExponentialBackoffRetry(zookeeperConfig.getBaseSleepTimeMs(), zookeeperConfig.getMaxRetries(), zookeeperConfig.getMaxSleepMs()));
+        if (0 != zookeeperConfig.getSessionTimeoutMs()) {
+            builder.sessionTimeoutMs(zookeeperConfig.getSessionTimeoutMs());
+        }
+        if (0 != zookeeperConfig.getConnectionTimeoutMs()) {
+            builder.connectionTimeoutMs(zookeeperConfig.getConnectionTimeoutMs());
+        }
+        if (StringUtils.isNotBlank(zookeeperConfig.getDigest())) {
+            builder.authorization("digest", zookeeperConfig.getDigest().getBytes(Charset.forName("UTF-8"))).aclProvider(new ACLProvider() {
+
+                @Override
+                public List<ACL> getDefaultAcl() {
+                    return ZooDefs.Ids.CREATOR_ALL_ACL;
+                }
+
+                @Override
+                public List<ACL> getAclForPath(final String path) {
+                    return ZooDefs.Ids.CREATOR_ALL_ACL;
+                }
+            });
+        }
+        client = builder.build();
+        client.start();
+        try {
+            client.blockUntilConnected();
+        } catch (final Exception ex) {
+            throw new RuntimeException(ex);
+        }
+        return client;
+    }
+
 
     public String get(final String key) {
         try {
@@ -121,4 +170,9 @@ public class ZookeeperOperator {
     public CuratorFramework getClient() {
         return client;
     }
+
+    public void close(){
+        CloseableUtils.closeQuietly(client);
+    }
+
 }

@@ -1,25 +1,14 @@
 package org.apache.dolphinscheduler.client.registry;
 
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.framework.recipes.cache.TreeCache;
-import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.apache.curator.utils.CloseableUtils;
-import org.apache.dolphinscheduler.client.zookeeper.DefaultEnsembleProvider;
 import org.apache.dolphinscheduler.client.zookeeper.ZookeeperCachedOperator;
-import org.apache.dolphinscheduler.client.zookeeper.ZookeeperConfig;
-import org.apache.dolphinscheduler.remote.utils.StringUtils;
 import org.apache.dolphinscheduler.remote.utils.ThreadUtils;
-import org.apache.zookeeper.ZooDefs;
-import org.apache.zookeeper.data.ACL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.nio.charset.Charset;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -43,10 +32,6 @@ public class ZookeeperRegistryCenter implements InitializingBean {
     private static final String EMPTY = "";
 
     @Autowired
-    private ZookeeperConfig zookeeperConfig;
-
-    private CuratorFramework client;
-
     private ZookeeperCachedOperator zookeeperOperator;
 
     @Override
@@ -55,42 +40,8 @@ public class ZookeeperRegistryCenter implements InitializingBean {
     }
 
     public void init(){
-        client = buildClient();
-        zookeeperOperator = new ZookeeperCachedOperator(client, NODES);
+        zookeeperOperator.start(NODES);
         initNodes();
-    }
-
-    public CuratorFramework buildClient() {
-        logger.info("zookeeper registry center init, server lists is: {}.", zookeeperConfig.getServerLists());
-        CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder().ensembleProvider(new DefaultEnsembleProvider(zookeeperConfig.getServerLists())).retryPolicy(new ExponentialBackoffRetry(zookeeperConfig.getBaseSleepTimeMs(), zookeeperConfig.getMaxRetries(), zookeeperConfig.getMaxSleepMs()));
-        if (0 != zookeeperConfig.getSessionTimeoutMs()) {
-            builder.sessionTimeoutMs(zookeeperConfig.getSessionTimeoutMs());
-        }
-        if (0 != zookeeperConfig.getConnectionTimeoutMs()) {
-            builder.connectionTimeoutMs(zookeeperConfig.getConnectionTimeoutMs());
-        }
-        if (StringUtils.isNotBlank(zookeeperConfig.getDigest())) {
-            builder.authorization("digest", zookeeperConfig.getDigest().getBytes(Charset.forName("UTF-8"))).aclProvider(new ACLProvider() {
-
-                @Override
-                public List<ACL> getDefaultAcl() {
-                    return ZooDefs.Ids.CREATOR_ALL_ACL;
-                }
-
-                @Override
-                public List<ACL> getAclForPath(final String path) {
-                    return ZooDefs.Ids.CREATOR_ALL_ACL;
-                }
-            });
-        }
-        client = builder.build();
-        client.start();
-        try {
-            client.blockUntilConnected();
-        } catch (final Exception ex) {
-            throw new RuntimeException(ex);
-        }
-        return client;
     }
 
     private void initNodes() {
@@ -104,10 +55,13 @@ public class ZookeeperRegistryCenter implements InitializingBean {
                 zookeeperOperator.close();
             }
             ThreadUtils.sleep(500);
-            CloseableUtils.closeQuietly(client);
         } catch (Throwable ex) {
             logger.error("ZookeeperRegistryCenter close error", ex);
         }
+    }
+
+    public boolean isTaskPath(String path) {
+        return path != null && path.contains(TASK_PATH) && path.split("/").length == 5;
     }
 
     public String getTaskPath() {
@@ -135,10 +89,6 @@ public class ZookeeperRegistryCenter implements InitializingBean {
 
     private String getTaskNamePath(String taskName){
         return this.getTaskPath() + "/" + taskName;
-    }
-
-    public ZookeeperConfig getZookeeperConfigConfig() {
-        return zookeeperConfig;
     }
 
     protected String cachePath() {

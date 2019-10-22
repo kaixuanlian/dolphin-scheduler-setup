@@ -15,6 +15,7 @@ import org.apache.dolphinscheduler.remote.handler.NettyClientHandler;
 import org.apache.dolphinscheduler.remote.utils.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
@@ -26,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * @Author: Tboy
  */
+@Component
 public class NettyRemotingClient {
 
     private final Logger logger = LoggerFactory.getLogger(NettyRemotingClient.class);
