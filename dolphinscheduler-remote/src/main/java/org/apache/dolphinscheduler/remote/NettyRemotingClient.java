@@ -8,15 +8,18 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import org.apache.dolphinscheduler.remote.codec.NettyDecoder;
 import org.apache.dolphinscheduler.remote.codec.NettyEncoder;
 import org.apache.dolphinscheduler.remote.command.Command;
+import org.apache.dolphinscheduler.remote.command.CommandType;
 import org.apache.dolphinscheduler.remote.config.Address;
 import org.apache.dolphinscheduler.remote.config.NettyClientConfig;
 import org.apache.dolphinscheduler.remote.exceptions.RemotingException;
 import org.apache.dolphinscheduler.remote.handler.NettyClientHandler;
+import org.apache.dolphinscheduler.remote.processor.NettyRequestProcessor;
 import org.apache.dolphinscheduler.remote.utils.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -48,14 +51,17 @@ public class NettyRemotingClient {
         }
     });
 
+    private final NettyClientHandler clientHandler = new NettyClientHandler(this);
+
     private final NettyClientConfig clientConfig;
 
     public NettyRemotingClient(final NettyClientConfig clientConfig){
         this.clientConfig = clientConfig;
     }
 
+    @PostConstruct
     public void start(){
-        final NettyClientHandler handler = new NettyClientHandler(this);
+
         this.bootstrap
                 .group(this.workGroup)
                 .channel(NioSocketChannel.class)
@@ -67,10 +73,14 @@ public class NettyRemotingClient {
                     public void initChannel(SocketChannel ch) throws Exception {
                         ch.pipeline().addLast(
                                 new NettyDecoder(),
-                                handler,
+                                clientHandler,
                                 encoder);
                     }
                 });
+    }
+
+    public void registerProcessor(final CommandType commandType, final NettyRequestProcessor processor, final ExecutorService executor) {
+        this.clientHandler.registerProcessor(commandType, processor, executor);
     }
 
     public void send(final Address address, final Command command) throws RemotingException {
@@ -93,8 +103,6 @@ public class NettyRemotingClient {
             throw new RemotingException(msg, ex);
         }
     }
-
-
 
     public Channel getChannel(Address address) {
         Channel channel = channels.get(address);

@@ -77,6 +77,11 @@ public class ZookeeperRegistryCenter implements InitializingBean {
         return new HashSet(tasks);
     }
 
+    public Set<String> getWorkerNodes(String taskName) {
+        List<String> workerNodes = zookeeperOperator.getChildrenKeys(TASK_PATH + "/" + taskName);
+        return new HashSet(workerNodes);
+    }
+
     public void persistTask(String key, String value) throws Exception{
         String taskNamePath = getTaskNamePath(key);
         zookeeperOperator.persist(taskNamePath, value);

@@ -1,14 +1,19 @@
 package org.apache.dolphinscheduler.remote;
 
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.*;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOption;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import org.apache.dolphinscheduler.remote.codec.NettyDecoder;
 import org.apache.dolphinscheduler.remote.codec.NettyEncoder;
+import org.apache.dolphinscheduler.remote.command.CommandType;
 import org.apache.dolphinscheduler.remote.config.NettyServerConfig;
 import org.apache.dolphinscheduler.remote.handler.NettyServerHandler;
+import org.apache.dolphinscheduler.remote.processor.NettyRequestProcessor;
 import org.apache.dolphinscheduler.remote.utils.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +43,8 @@ public class NettyRemotingServer {
     private final NioEventLoopGroup workGroup;
 
     private final NettyServerConfig serverConfig;
+
+    private final NettyServerHandler serverHandler = new NettyServerHandler(this);
 
     public NettyRemotingServer(final NettyServerConfig serverConfig){
         this.serverConfig = serverConfig;
@@ -73,7 +80,7 @@ public class NettyRemotingServer {
                 .childHandler(new ChannelInitializer<NioSocketChannel>() {
 
                     protected void initChannel(NioSocketChannel ch) throws Exception {
-                        initChannel(ch);
+                        initNettyChannel(ch);
                     }
                 });
 
@@ -93,11 +100,15 @@ public class NettyRemotingServer {
         }
     }
 
-    private void initChannel(NioSocketChannel ch) throws Exception{
+    private void initNettyChannel(NioSocketChannel ch) throws Exception{
         ChannelPipeline pipeline = ch.pipeline();
         pipeline.addLast("encoder", encoder);
         pipeline.addLast("decoder", new NettyDecoder());
-        pipeline.addLast("handler", new NettyServerHandler(this));
+        pipeline.addLast("handler", serverHandler);
+    }
+
+    public void registerProcessor(final CommandType commandType, final NettyRequestProcessor processor, final ExecutorService executor) {
+        this.serverHandler.registerProcessor(commandType, processor, executor);
     }
 
     public ExecutorService getDefaultExecutor() {

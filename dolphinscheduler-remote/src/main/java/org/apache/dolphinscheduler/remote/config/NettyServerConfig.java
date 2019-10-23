@@ -1,6 +1,5 @@
 package org.apache.dolphinscheduler.remote.config;
 
-import org.apache.dolphinscheduler.remote.utils.Constants;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 

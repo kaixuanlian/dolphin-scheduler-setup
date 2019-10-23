@@ -1,8 +1,17 @@
 package org.apache.dolphinscheduler.client.registry;
 
+import io.netty.channel.Channel;
 import org.apache.dolphinscheduler.client.annotation.DolphinSchedulerTask;
 import org.apache.dolphinscheduler.client.exceptions.TaskRegistryException;
+import org.apache.dolphinscheduler.client.utils.SpringApplication;
+import org.apache.dolphinscheduler.remote.NettyRemotingServer;
+import org.apache.dolphinscheduler.remote.command.Command;
+import org.apache.dolphinscheduler.remote.command.CommandType;
+import org.apache.dolphinscheduler.remote.command.ExecuteTaskCommand;
 import org.apache.dolphinscheduler.remote.config.NettyClientConfig;
+import org.apache.dolphinscheduler.remote.config.NettyServerConfig;
+import org.apache.dolphinscheduler.remote.processor.NettyRequestProcessor;
+import org.apache.dolphinscheduler.remote.utils.FastJsonSerializer;
 import org.apache.dolphinscheduler.remote.utils.IPUtils;
 import org.apache.zookeeper.KeeperException;
 import org.reflections.Reflections;
@@ -17,6 +26,7 @@ import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
@@ -39,7 +49,10 @@ public class DolphinSchedulerTaskRegistry implements ApplicationListener<Applica
     private ZookeeperRegistryCenter zookeeperRegistryCenter;
 
     @Autowired
-    private NettyClientConfig nettyClientConfig;
+    private NettyServerConfig nettyServerConfig;
+
+    @Autowired
+    private NettyRemotingServer nettyRemotingServer;
 
     private final AtomicBoolean REGISTER = new AtomicBoolean(false);
 
@@ -50,12 +63,22 @@ public class DolphinSchedulerTaskRegistry implements ApplicationListener<Applica
         if (applicationEvent instanceof ContextRefreshedEvent && REGISTER.compareAndSet(false, true)) {
             try {
                 Set<Method> annotationTask = this.findAnnotationTask();
-                this.registerAnnotationTask(annotationTask);
+                if(!CollectionUtils.isEmpty(annotationTask)){
+                    this.registerAnnotationTask(annotationTask);
+                    this.startServer();
+                    Runtime.getRuntime().addShutdownHook(new ShutdownHookThread());
+                }
             } catch (Throwable ex){
                 logger.error("DolphinSchedulerTaskRegister error", ex);
             }
-        } else{
-            logger.info("DolphinSchedulerTaskRegister has registered");
+        }
+    }
+
+    class ShutdownHookThread extends Thread{
+
+        public void run(){
+            zookeeperRegistryCenter.close();
+            nettyRemotingServer.close();
         }
     }
 
@@ -86,12 +109,45 @@ public class DolphinSchedulerTaskRegistry implements ApplicationListener<Applica
             }
         }
     }
+
+    private void startServer(){
+        this.nettyRemotingServer.registerProcessor(CommandType.EXECUTE_TASK, new ExecuteTaskRequestProcessor(), null);
+        this.nettyRemotingServer.start();
+    }
+
+    class ExecuteTaskRequestProcessor implements NettyRequestProcessor{
+
+        @Override
+        public void process(Channel channel, Command command) {
+            logger.info("received command : {}", command);
+            try {
+                switch (command.getType()){
+                    case EXECUTE_TASK:
+                        ExecuteTaskCommand task = FastJsonSerializer.deserialize(command.getBody().array(), ExecuteTaskCommand.class);
+                        Object bean = SpringApplication.getBean(Class.forName(task.getClassName()));
+                        Class<?> declaringClass = Class.forName(task.getClassName());
+                        Method[] methods = declaringClass.getMethods();
+                        for(Method method : methods){
+                            if(method.getName().equalsIgnoreCase(task.getMethodName())){
+                                method.invoke(bean);
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            } catch (Throwable ex){
+                logger.info("process command : {} error : {}", command, ex);
+            }
+        }
+    }
+
     private DolphinSchedulerTaskRegistryBean build(String className, String methodName, String taskName, String description){
         DolphinSchedulerTaskRegistryBean registerBean = new DolphinSchedulerTaskRegistryBean();
         registerBean.setApplicationName(registerConfig.getApplicationName());
         registerBean.setGroupName(registerConfig.getGroupName());
         registerBean.setTaskName(taskName);
-        registerBean.setConnectorPort(nettyClientConfig.getConnectorPort());
+        registerBean.setConnectorPort(nettyServerConfig.getListenPort());
         registerBean.setDescription(description);
         registerBean.setClassName(className);
         registerBean.setMethodName(methodName);

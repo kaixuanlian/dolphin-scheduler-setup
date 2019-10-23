@@ -15,6 +15,6 @@ public class BootController {
 
     @DolphinSchedulerTask(name="demo", description = "test demo task")
     public void boot(){
-        System.out.println("boot method demo");
+        System.out.println("invoke boot method demo");
     }
 }
